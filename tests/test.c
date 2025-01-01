@@ -1,0 +1,9 @@
+// SPDX-FileCopyrightText: 2024 Łukasz Bartkiewicz <lukasku@proton.me>
+// SPDX-License-Identifier: MPL-2.0
+
+#include "lekc.h"
+
+int main() {
+    test();
+    return 0;
+}
