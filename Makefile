@@ -1,9 +1,9 @@
-# SPDX-FileCopyrightText: 2024 Łukasz Bartkiewicz <lukasku@proton.me>
+# SPDX-FileCopyrightText: 2025 Łukasz Bartkiewicz <lukasku@proton.me>
 # SPDX-License-Identifier: MPL-2.0
 
 CC = gcc
 CFLAGS = -Iinclude
-SRC = src/lekc.c
+SRC = $(wildcard src/*.c)
 OBJ = $(SRC:.c=.o)
 LIB = lib/liblekc.a
 
@@ -19,6 +19,7 @@ clean:
 	rm -f $(OBJ) $(LIB) tests/test
 
 test: all
-	$(CC) tests/test.c -Iinclude -Llib -llekc -o test 
+	$(CC) tests/test.c -Iinclude -Llib -llekc -o tests/test
+	./tests/test
 
 .PHONY: all clean test
