@@ -1,8 +1,8 @@
 # SPDX-FileCopyrightText: 2025 Łukasz Bartkiewicz <lukasku@proton.me>
 # SPDX-License-Identifier: MPL-2.0
 
-CC = gcc
-CFLAGS = -Iinclude
+CC := gcc
+CFLAGS := -std=c99 -Wall -Wextra -Wwrite-strings -Iinclude
 SRC = $(wildcard src/*.c)
 OBJ = $(SRC:.c=.o)
 LIB = lib/liblekc.a
