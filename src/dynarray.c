@@ -50,7 +50,7 @@ int push_dynarray(dynarray *da,
                   void *elem)
 {
     if (da->size == da->capacity)
-        if (!resize_dynarray(da, da->capacity * 2))
+        if (resize_dynarray(da, da->capacity * 2))
             return 1;
 
     memcpy((char *)da->array + da->size * da->elem_size, elem, da->elem_size);

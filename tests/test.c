@@ -12,10 +12,10 @@ int main()
     if (!array)
         return 1;
 
+    PUSH_DYNARRAY(array, 1);
     PUSH_DYNARRAY(array, 2);
     PUSH_DYNARRAY(array, 3);
     PUSH_DYNARRAY(array, 4);
-    PUSH_DYNARRAY(array, 5);
 
     int popped_value = POP_DYNARRAY(array, int);
     printf("Popped value: %d\n", popped_value);
