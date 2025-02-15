@@ -5,19 +5,18 @@
 #define LEKC_H
 
 #include <stdint.h>
+#include "dynarray.h"
 
-/* typedef struct {
-    void* (*next)(void *);
-} Iterator; */
+typedef struct Parser Parser;
 
-typedef struct PState PState;
-
-struct PState {
+struct Parser {
     uint16_t curr;
     uint16_t start;
 
-    void *input; 
-    void *output;
+    dynarray *input; 
+    dynarray *output;
+    dynarray *errors;
+
     void* (*next)(void *);
 };
 

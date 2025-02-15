@@ -5,6 +5,7 @@
 #define DYNARRAY_H
 
 #include <stddef.h>
+#include "iterator.h"
 
 typedef struct
 {

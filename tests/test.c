@@ -3,8 +3,10 @@
 
 #include "lekc.h"
 #include "dynarray.h"
+#include "iterator.h"
 #include <stdio.h>
 #include <stdlib.h>
+
 
 int main()
 {
@@ -19,6 +21,13 @@ int main()
 
     int popped_value = POP_DYNARRAY(array, int);
     printf("Popped value: %d\n", popped_value);
+
+    int int_arr[4] = {1, 2, 3, 4};
+    Iterator it = begin(int_arr, sizeof(int), 4);
+    
+    FOR_EACH(it) {
+        printf("%d\n", *(int *)it.ptr);
+    }
 
     destroy_dynarray(array);
 
