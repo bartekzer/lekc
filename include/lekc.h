@@ -6,18 +6,44 @@
 
 #include <stdint.h>
 #include "dynarray.h"
+#include "iterator.h"
 
-typedef struct Parser Parser;
+typedef enum {
+    AMBIGUOUS,
+    UNEXPECTED
+} Error;
 
-struct Parser {
-    uint16_t curr;
-    uint16_t start;
+typedef struct {
+    unsigned int index;
+    unsigned int start;
 
-    dynarray *input; 
+    // size_t token_size; <-- reachable by input->elem_size
+    // size_t node_size;  <-- reachable by output->elem_size
+
+    iterator *input;
     dynarray *output;
-    dynarray *errors;
 
-    void* (*next)(void *);
+    int (*eq)(void *, void *);
+
+    /*.--.--.--.*/
+
+    int success;
+    union {
+        Error error;
+        void *ast;
+    } result;
+} Context;
+
+typedef struct Combinator Combinator;
+
+struct Combinator {
+    char *name;
+    Combinator *(*fn)(Context *, dynarray *combinators);
+    dynarray *combinators;
 };
+
+Context new_ctxt(iterator *,
+                 int (*)(void *, void *),
+                 int);
 
 #endif // LEKC_H

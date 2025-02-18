@@ -4,20 +4,20 @@
 #include <stdio.h>
 #include "iterator.h"
 
-Iterator begin(void* ptr,
+iterator begin(void* ptr,
                size_t elem_size,
                size_t length)
 {
-    return (Iterator){ptr, elem_size, length == 0 ? NULL : ptr + elem_size * length};
+    return (iterator){ptr, elem_size, length == 0 ? NULL : ptr + elem_size * length};
 }
 
-Iterator* next(Iterator* it)
+iterator* next(iterator* it)
 {
     it->ptr += it->elem_size;
     return it;
 }
 
-int is_end(Iterator* it)
+int is_end(iterator* it)
 {
     return *(char*)it->ptr == '\0' || (it->end && it->ptr == it->end);
 }

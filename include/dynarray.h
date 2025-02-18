@@ -22,6 +22,11 @@ int push_dynarray(dynarray *, void *);
 void *pop_dynarray(dynarray *);
 
 #define CREATE_DYNARRAY(cap, type) create_dynarray(cap, sizeof(type))
+/* #define CREATE_DYNARRAY_FROM_ARRAY(input, cap, type) do { \
+        dynarray *da = CREATE_DYNARRAY(cap, type);        \
+        if (!da) return NULL;                             \
+        da.array = input;                                 \
+    } while (0) */
 #define PUSH_DYNARRAY(da, elem) do { \
         typeof(elem) _elem = (elem); \
         push_dynarray(da, &_elem);   \

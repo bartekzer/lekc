@@ -66,4 +66,5 @@ void *pop_dynarray(dynarray *da)
 
     da->size--;
     return (char *)da->array + da->size * da->elem_size;
+
 }
