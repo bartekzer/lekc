@@ -34,16 +34,40 @@ typedef struct {
     } result;
 } Context;
 
-typedef struct Combinator Combinator;
+// typedef Context *(*Terminal)(Context *, void *);
+// typedef Context *(*Nonterminal)(Context *, dynarray *);
 
-struct Combinator {
+// typedef struct {
+//     int term;
+//     union  {
+//         Terminal terminal;
+//         Nonterminal nonterminal; 
+//     };
+// } Lexeme; // go in the dynarray of nonterminals
+
+// typedef struct Combinator Combinator;
+
+// struct Combinator {
+//     char *name;
+//     Combinator *(*fn)(Context *, dynarray *combinators);
+//     dynarray *combinators;
+// };
+
+typedef struct {
     char *name;
-    Combinator *(*fn)(Context *, dynarray *combinators);
+    int (*fn)(Context *, dynarray *combinators);
     dynarray *combinators;
-};
+} Combinator;
 
 Context new_ctxt(iterator *,
                  int (*)(void *, void *),
                  int);
+
+#define COMPARE(type, name, body) \
+    static int compare_##name(void *_a, void *_b) { \
+        const type *a = (const type*)_a; \
+        const type *b = (const type*)_b; \
+        body \
+    }
 
 #endif // LEKC_H

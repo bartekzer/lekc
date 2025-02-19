@@ -31,6 +31,6 @@ void *pop_dynarray(dynarray *);
         typeof(elem) _elem = (elem); \
         push_dynarray(da, &_elem);   \
     } while (0)
-#define POP_DYNARRAY(da, type) (*(type *)pop_dynarray(da))
+#define POP_DYNARRAY(da, type) (type *)pop_dynarray(da)
 
 #endif // DYNARRAY_H

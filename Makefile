@@ -7,7 +7,7 @@
 # https://keleshev.com/abstract-syntax-tree-an-example-in-c/
 
 CC := gcc
-CFLAGS := -std=c99 -Wall -Wextra -Wwrite-strings -Iinclude
+CFLAGS := -std=gnu99 -Wall -Wextra -Wwrite-strings -Iinclude
 SRC = $(wildcard src/*.c)
 OBJ = $(SRC:.c=.o)
 LIB = lib/liblekc.a
