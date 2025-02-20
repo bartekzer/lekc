@@ -14,60 +14,80 @@ typedef enum {
 } Error;
 
 typedef struct {
-    unsigned int index;
-    unsigned int start;
+    iterator *src;
+    size_t index;
+    // src.elem_size (size of token)
+} Cursor;
 
-    // size_t token_size; <-- reachable by input->elem_size
-    // size_t node_size;  <-- reachable by output->elem_size
+typedef struct {
+    const char *name;
+    void *terminal;
+    dynarray *children;
+    // children.elem_size (size of a node)
+} Node;
 
-    iterator *input;
-    dynarray *output;
-
-    int (*eq)(void *, void *);
-
-    /*.--.--.--.*/
-
+typedef struct {
     int success;
     union {
         Error error;
-        void *ast;
-    } result;
-} Context;
-
-// typedef Context *(*Terminal)(Context *, void *);
-// typedef Context *(*Nonterminal)(Context *, dynarray *);
-
-// typedef struct {
-//     int term;
-//     union  {
-//         Terminal terminal;
-//         Nonterminal nonterminal; 
-//     };
-// } Lexeme; // go in the dynarray of nonterminals
-
-// typedef struct Combinator Combinator;
-
-// struct Combinator {
-//     char *name;
-//     Combinator *(*fn)(Context *, dynarray *combinators);
-//     dynarray *combinators;
-// };
+        Node *node;
+    };
+} Result;
 
 typedef struct {
-    char *name;
-    int (*fn)(Context *, dynarray *combinators);
+    Cursor *input;
+    int (*eq)(void *, void *);
+} Context;
+
+// typedef Result (*CombinatorFn)(Context *, Combinator *);
+
+typedef struct Combinator Combinator;
+
+struct Combinator {
+    Result (*fn)(Context *, Combinator *);
+    void *terminal;
     dynarray *combinators;
-} Combinator;
+};
 
+Cursor new_cursor(iterator *);
 Context new_ctxt(iterator *,
-                 int (*)(void *, void *),
-                 int);
+                 int (*)(void *, void *));
 
-#define COMPARE(type, name, body) \
-    static int compare_##name(void *_a, void *_b) { \
-        const type *a = (const type*)_a; \
-        const type *b = (const type*)_b; \
-        body \
-    }
+Result seq(Context *, Combinator *);
+Result alt(Context *, Combinator *);
+Result many(Context *, Combinator *); 
+Result many1(Context *, Combinator *);
+Result optional(Context *, Combinator *);
+Result read(Context *, Combinator *);
+
+// typedef struct {
+//     Cursor *input;
+//     Node *output;
+
+//     int (*eq)(void *, void *);
+
+//     int success;
+//     union {
+//         Error error;
+//         void *node;
+//     } result;
+// } Context;
+
+// typedef struct {
+//     void *data;
+//     int (*fn)(Context *, dynarray *combinators);
+//     dynarray *combinators;
+// } Combinator;
+
+// Context new_ctxt(iterator *,
+//                  int (*)(void *, void *),
+//                  int);
+
+// #define COMPARE(type, name, body) \
+//     static int compare_##name(void *_a, void *_b) { \
+//         const type *a = (const type*)_a; \
+//         const type *b = (const type*)_b; \
+//         body \
+//     }
 
 #endif // LEKC_H

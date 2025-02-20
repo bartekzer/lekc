@@ -11,7 +11,6 @@ COMPARE(int, int, {
     return *a == *b;
 })
 
-
 int main()
 {
     // dynarray *array = CREATE_DYNARRAY(3, int);
@@ -42,14 +41,6 @@ int main()
     iterator input = begin(int_arr, sizeof(int), 10);
 
     Context ctxt = new_ctxt(&input, compare_int, sizeof(double));
-
-    dynarray *seq_combinators = CREATE_DYNARRAY(2, Combinator);
-    
-    Combinator seq = {
-        .name = "seq",
-        .fn = seq_fn,
-        .combinators = CREATE_DYNARRAY()
-    }
 
     return 0;
 }

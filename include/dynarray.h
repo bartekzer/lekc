@@ -32,5 +32,6 @@ void *pop_dynarray(dynarray *);
         push_dynarray(da, &_elem);   \
     } while (0)
 #define POP_DYNARRAY(da, type) (type *)pop_dynarray(da)
+#define GET_DYNARRAY(da, i, type) (*(type*)((char*)(da)->array + (i) * (da)->elem_size))
 
 #endif // DYNARRAY_H
