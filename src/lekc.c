@@ -6,10 +6,24 @@
 #include "iterator.h"
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
+Combinator
+new_combinator(const char *name,
+               Result (*fn)(Context *, Combinator *),
+               void *terminal,
+               dynarray *combinators)
+{
+    return (Combinator){
+        .name = name,
+        .fn = fn,
+        .terminal = terminal,
+        .combinators = combinators
+    };
+}
 
-
-Cursor new_cursor(iterator *src)
+Cursor
+new_cursor(iterator *src)
 {
     return (Cursor){
         .src = src,
@@ -17,25 +31,33 @@ Cursor new_cursor(iterator *src)
     };
 }
 
-Context new_ctxt(iterator *input,
-                 int (*eq)(void *, void *))
-{
-    Cursor cursor = new_cursor(input);
-    return (Context){
-        .input = &cursor,
-        .eq = eq
-    };
-}
+// Context
+// new_ctxt(iterator *input,
+//          int (*eq)(void *, void *))
+// {
+//     return (Context){
+//         .input = new_cursor(input),
+//         .eq = eq
+//     };
+// }
 
-Result seq(Context *ctxt,
-           Combinator *self)
-{   
-    // va aller dans `children` du Node retourné dans le result si ça marche
+Result
+seq(Context *ctxt,
+    Combinator *self)
+{
+    printf("\n\n%s(seq)\n", self->name);
+    if (!ctxt || !self || !self->combinators) {
+        return (Result){
+            .success = 0,
+            .error = A
+        };
+    }
+
     dynarray *v = create_dynarray(5, sizeof(Node*));
     if (!v) {
         return (Result){
             .success = 0,
-            .error = UNEXPECTED
+            .error = B
         };
     }
 
@@ -44,15 +66,12 @@ Result seq(Context *ctxt,
         Combinator *combinator = GET_DYNARRAY(combinators, i, Combinator*);
         Result res = combinator->fn(ctxt, combinator);
 
-        if (res.success) { // c'est passé pour ce combinator
-            PUSH_DYNARRAY(v, res.node);
-        } else {
+        if (!res.success) {
             destroy_dynarray(v);
-            return (Result){
-                .success = 0,
-                .error = res.error
-            };
+            return res;
         }
+
+        PUSH_DYNARRAY(v, res.node);
     }
 
     Node *node = malloc(sizeof(Node));
@@ -60,13 +79,13 @@ Result seq(Context *ctxt,
         destroy_dynarray(v);
         return (Result){
             .success = 0,
-            .error = UNEXPECTED
+            .error = C
         };
     }
 
     *node = (Node){
-        .name = "seq",
-        .terminal = self->terminal, // devrait être NULL normalement
+        .name = self->name,
+        .terminal = self->terminal,
         .children = v
     };
 
@@ -76,77 +95,80 @@ Result seq(Context *ctxt,
     };
 }
 
-
-Result alt(Context *ctxt,
-           Combinator *self)
+Result
+alt(Context *ctxt,
+    Combinator *self)
 {
+    printf("\n\n%s(alt)\n", self->name);
+    if (!ctxt || !self || !self->combinators) {
+        return (Result){
+            .success = 0,
+            .error = D
+        };
+    }
+
+    size_t index_copy = ctxt->input->index;
+    void *ptr_copy = ctxt->input->src->ptr;
+
     dynarray *combinators = self->combinators;
+
     for (size_t i = 0; i < combinators->size; i++) {
-        Context *new_ctxt = malloc(sizeof(Context));
-        if (!new_ctxt) {
-            return (Result){
-                .success = 0,
-                .error = UNEXPECTED
-            };
-        }
-        memcpy(new_ctxt, ctxt, sizeof(Context));
+        ctxt->input->index = index_copy;
+        ctxt->input->src->ptr = ptr_copy;
+
         Combinator *combinator = GET_DYNARRAY(combinators, i, Combinator*);
-        Result res = combinator->fn(new_ctxt, combinator);
+        Result res = combinator->fn(ctxt, combinator);
         
         if (res.success) {
-            ctxt = new_ctxt;
-
             Node *node = malloc(sizeof(Node));
+
             if (!node) {
-                free(new_ctxt);
                 return (Result){
                     .success = 0,
-                    .error = UNEXPECTED
+                    .error = E
                 };
             }
 
             *node = (Node){
-                .name = "alt",
-                .terminal = self->terminal, // devrait être NULL normalement
-                .children = CREATE_DYNARRAY(2, sizeof(Node*))
+                .name = self->name,
+                .terminal = self->terminal,
+                .children = CREATE_DYNARRAY(1, sizeof(Node*))
             };
 
             if (!node->children) {
                 free(node);
-                free(new_ctxt);
                 return (Result){
                     .success = 0,
-                    .error = UNEXPECTED
+                    .error = F
                 };
             }
 
             PUSH_DYNARRAY(node->children, res.node);
+
             return (Result) {
                 .success = 1,
                 .node = node
             };
-        } else {
-            free(new_ctxt);
-
-            if (i == combinators->size - 1) {
-                return (Result){
-                    .success = 0,
-                    .error = res.error
-                };
-            }
         }
     }
-}   
 
+    return (Result){
+        .success = 0,
+        .error = G
+    };
+}
 
-Result many(Context *ctxt,
-            Combinator *self)
+Result
+many(Context *ctxt,
+     Combinator *self)
 {
+    printf("\n\n%s(many)\n", self->name);
+
     dynarray *v = create_dynarray(5, sizeof(Node*));
     if (!v) {
         return (Result){
             .success = 0,
-            .error = UNEXPECTED
+            .error = H
         };
     }
 
@@ -157,7 +179,7 @@ Result many(Context *ctxt,
         destroy_dynarray(v);
         return (Result){
             .success = 0,
-            .error = UNEXPECTED
+            .error = I
         };
     }
 
@@ -173,11 +195,11 @@ Result many(Context *ctxt,
         destroy_dynarray(v);
         return (Result){
             .success = 0,
-            .error = UNEXPECTED
+            .error = J
         };
     }
     *node = (Node){
-        .name = "many",
+        .name = self->name,
         .terminal = self->terminal,
         .children = v
     };
@@ -188,136 +210,103 @@ Result many(Context *ctxt,
     };
 }
 
+Result
+optional(Context *ctxt,
+         Combinator *self)
+{
+    printf("\n\n%s(optional)\n", self->name);
 
+    dynarray *combinators = self->combinators;
+    Combinator *combinator = GET_DYNARRAY(combinators, 0, Combinator*);
 
+    if (!combinator) {
+        return (Result){
+            .success = 0,
+            .error = K
+        };
+    }
+    
+    Result res = combinator->fn(ctxt, combinator);
+    if (res.success) {
+        Node *node = malloc(sizeof(Node));
+        if (!node) {
+            return (Result){
+                .success = 0,
+                .error = L
+            };
+        }
 
+        dynarray* children = CREATE_DYNARRAY(1, Node*);
+        if (!children) {
+            free(node);
+            return (Result){
+                .success = 0,
+                .error = M
+            };
+        }
 
+        PUSH_DYNARRAY(children, res.node);
 
+        *node = (Node){
+            .name = self->name,
+            .terminal = self->terminal,
+            .children = children
+        };
 
+        return (Result){
+            .success = 1,
+            .node = node
+        };
+    } else {
+        return (Result){
+            .success = 1,
+            .error = res.error
+        };
+    }
+}
 
+Result
+skip(Context *ctxt,
+     Combinator *self)
+{   
+    printf("\n\n%s(skip)\n", self->name);
+    if (!ctxt || !self || !self->terminal) {
+        return (Result){
+            .success = 0,
+            .error = N
+        };
+    }
 
+    iterator *it = ctxt->input->src;
 
+    if (is_end(it)) {
+        printf("Error O");
+        return (Result){
+            .success = 0,
+            .error = O
+        };
+    }
 
+    int *curr = it->ptr;
 
+    printf("expected: %d\n", *(int *)self->terminal);
+    printf("curr: %d\n", *(int *)curr);
+    printf("eq: %d\n", ctxt->eq(self->terminal, curr));
+    if (ctxt->eq(self->terminal, curr)) {
+        printf("is end : %d\n", !is_end(it));
+        next(it);
+        ctxt->input->index++;
 
+        printf("Success");
+        return (Result){
+            .success = 1,
+            .node = NULL,
+        };
+    }
 
-
-
-/*
- * For the moment, all combinators act as if
- * only 2 combinators had been passed to them,
- * so that we can pop from the `combinators` without
- * further complication. Soon they will accept
- * an arbitrary number in accordance with their
- * dynamic nature.
- */
-
-// int seq_fn(Combinator* combinator,
-//            Context *ctxt)
-// {
-//     if (ctxt->success) {
-//         Combinator *p2 = POP_DYNARRAY(combinator->combinators, Combinator);
-//         Combinator *p1 = POP_DYNARRAY(combinator->combinators, Combinator);
-
-//         if (!p1->fn(ctxt, p1->combinators)) {
-//             PUSH_DYNARRAY(ctxt->output, ctxt->result.ast);
-//         } else {
-//             return 1;
-//         }
-        
-//         if (!p2->fn(ctxt, p2->combinators)) {
-//             PUSH_DYNARRAY(ctxt->output, ctxt->result.ast);
-//         } else {
-//             return 1;
-//         }
-        
-//         return 0;
-
-//     } else {
-//         return 1;
-//     }
-// }
-
-// // for now works like a `or` combinator
-// int alt_fn(Combinator *combinator,
-//            Context *ctxt)
-// {
-//     if (ctxt->success) {
-//         Combinator *p2 = POP_DYNARRAY(combinator->combinators, Combinator);
-//         Combinator *p1 = POP_DYNARRAY(combinator->combinators, Combinator);
-
-//         if (!p1->fn(ctxt, p1->combinators)) {
-//             PUSH_DYNARRAY(ctxt->output, ctxt->result.ast);
-//             return 0;
-//         }
-
-//         if (p2->fn(ctxt, p2->combinators)) {
-//             return 1;
-//         } else {
-//             PUSH_DYNARRAY(ctxt->output, ctxt->result.ast);
-//             return 0;
-//         }
-//     } else {
-//         return 1;
-//     }
-// }
-
-// int many_fn(Combinator *combinator,
-//             Context *ctxt)
-// {
-//     if (ctxt->success) {
-//         Combinator *p = POP_DYNARRAY(combinator->combinators, Combinator);
-
-//         dynarray *v = create_dynarray(20, sizeof(ctxt->output->elem_size));
-        
-//         while (!p->fn(ctxt, p->combinators)) {
-//             PUSH_DYNARRAY(v, ctxt->result.ast);
-//         }
-
-//         PUSH_DYNARRAY(ctxt->output, v);
-//         destroy_dynarray(v);
-//         return 0; // there will always be at least 0 successes
-//     } else {
-//         return 1;
-//     }
-// }
-
-// int many1_fn(Combinator *combinator,
-//              Context *ctxt)
-// {
-//     if (ctxt->success) {
-//         Combinator *p = POP_DYNARRAY(combinator->combinators, Combinator);
-
-//         dynarray *v = create_dynarray(20, sizeof(ctxt->output->elem_size));
-        
-//         while (!p->fn(ctxt, p->combinators)){
-//             PUSH_DYNARRAY(v, ctxt->result.ast);
-//         }
-
-//         if (!v->size) {
-//             destroy_dynarray(v);
-//             return 1;
-//         }
-
-//         PUSH_DYNARRAY(ctxt->output, v);
-//         destroy_dynarray(v);
-//         return 0;
-//     } else {
-//         return 1;
-//     }
-// }
-
-// Context new_ctxt(iterator *input,
-//                  int (*eq)(void *, void *),
-//                  int node_size)
-// {
-//     return (Context){
-//         .index = 0,
-//         .start = 0,
-//         .input = input,
-//         .output = create_dynarray(100, node_size),
-//         .eq = eq,
-//         .success = 1,
-//         .result = {}
-//     };
-// }
+    printf("Error P");
+    return (Result){
+        .success = 0,
+        .error = P
+    };
+}

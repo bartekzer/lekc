@@ -27,27 +27,27 @@ dynarray *create_dynarray(size_t cap,
     return da;
 }
 
-int resize_dynarray(dynarray *da,
-                    size_t new_cap)
+int
+resize_dynarray(dynarray *da,
+                size_t new_cap)
 {
-    void *new_arr = realloc(da->array, new_cap * da->elem_size);
-    if (!new_arr)
-        return 1;
-
-    da->array = new_arr;
+    da->array = realloc(da->array, new_cap * da->elem_size);
+    if (!da->array) return 1;
     da->capacity = new_cap;
 
     return 0;
 }
 
-void destroy_dynarray(dynarray *da)
+void
+destroy_dynarray(dynarray *da)
 {
     free(da->array);
     free(da);
 }
 
-int push_dynarray(dynarray *da,
-                  void *elem)
+int
+push_dynarray(dynarray *da,
+              void *elem)
 {
     if (da->size == da->capacity)
         if (resize_dynarray(da, da->capacity * 2))
@@ -59,7 +59,8 @@ int push_dynarray(dynarray *da,
     return 0;
 }
 
-void *pop_dynarray(dynarray *da)
+void
+*pop_dynarray(dynarray *da)
 {
     if (da->size == 0)
         return NULL;

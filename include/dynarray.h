@@ -28,6 +28,7 @@ void *pop_dynarray(dynarray *);
         da.array = input;                                 \
     } while (0) */
 #define PUSH_DYNARRAY(da, elem) do { \
+        if (!elem) break;             \
         typeof(elem) _elem = (elem); \
         push_dynarray(da, &_elem);   \
     } while (0)

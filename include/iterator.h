@@ -13,7 +13,7 @@ typedef struct
     void* end;
 } iterator;
 
-iterator begin(void*, size_t, size_t);
+iterator init(void*, size_t, size_t);
 iterator* next(iterator*);
 int is_end(iterator*);
 

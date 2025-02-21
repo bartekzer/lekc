@@ -9,6 +9,32 @@
 #include "iterator.h"
 
 typedef enum {
+    A,
+    B,
+    C,
+    D,
+    E,
+    F,
+    G,
+    H,
+    I,
+    J,
+    K,
+    L,
+    M,
+    N,
+    O,
+    P,
+    Q,
+    R,
+    S,
+    T,
+    U,
+    V,
+    W,
+    X,
+    Y,
+    Z,
     AMBIGUOUS,
     UNEXPECTED
 } Error;
@@ -16,14 +42,12 @@ typedef enum {
 typedef struct {
     iterator *src;
     size_t index;
-    // src.elem_size (size of token)
 } Cursor;
 
 typedef struct {
     const char *name;
     void *terminal;
     dynarray *children;
-    // children.elem_size (size of a node)
 } Node;
 
 typedef struct {
@@ -39,16 +63,19 @@ typedef struct {
     int (*eq)(void *, void *);
 } Context;
 
-// typedef Result (*CombinatorFn)(Context *, Combinator *);
-
 typedef struct Combinator Combinator;
 
 struct Combinator {
+    const char *name;
     Result (*fn)(Context *, Combinator *);
     void *terminal;
     dynarray *combinators;
 };
 
+Combinator new_combinator(const char *,
+                          Result (*)(Context *, Combinator *),
+                          void *,
+                          dynarray *);
 Cursor new_cursor(iterator *);
 Context new_ctxt(iterator *,
                  int (*)(void *, void *));
@@ -58,36 +85,13 @@ Result alt(Context *, Combinator *);
 Result many(Context *, Combinator *); 
 Result many1(Context *, Combinator *);
 Result optional(Context *, Combinator *);
-Result read(Context *, Combinator *);
+Result skip(Context *, Combinator *);
 
-// typedef struct {
-//     Cursor *input;
-//     Node *output;
-
-//     int (*eq)(void *, void *);
-
-//     int success;
-//     union {
-//         Error error;
-//         void *node;
-//     } result;
-// } Context;
-
-// typedef struct {
-//     void *data;
-//     int (*fn)(Context *, dynarray *combinators);
-//     dynarray *combinators;
-// } Combinator;
-
-// Context new_ctxt(iterator *,
-//                  int (*)(void *, void *),
-//                  int);
-
-// #define COMPARE(type, name, body) \
-//     static int compare_##name(void *_a, void *_b) { \
-//         const type *a = (const type*)_a; \
-//         const type *b = (const type*)_b; \
-//         body \
-//     }
+#define COMPARE(type, name, body) \
+    static int compare_##name(void *_a, void *_b) { \
+        const type *a = (const type*)_a; \
+        const type *b = (const type*)_b; \
+        body \
+    }
 
 #endif // LEKC_H

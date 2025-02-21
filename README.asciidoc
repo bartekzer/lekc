@@ -1,0 +1,6 @@
+= лекс
+
+From лексикон "`lexicon`", lekc is a lightweight parser library written in C that provides recursive descent parsing through concise syntax, with support for generic AST construction.
+
+== Thanks
+Special thanks to https://github.com/MorganCaron[Morgan Caron] for his help throughout the project, from technical implementation details to code review.
