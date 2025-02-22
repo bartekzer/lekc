@@ -149,7 +149,12 @@ alt(Context *ctxt,
                 .success = 1,
                 .node = node
             };
-        }
+        } 
+        /*else {
+            if (i == combinators->size - 1) {
+                return res;
+            }
+        }*/
     }
 
     return (Result){
@@ -174,7 +179,6 @@ many(Context *ctxt,
 
     dynarray *combinators = self->combinators;
     Combinator *combinator = GET_DYNARRAY(combinators, 0, Combinator*);
-
     if (!combinator) {
         destroy_dynarray(v);
         return (Result){
@@ -183,16 +187,30 @@ many(Context *ctxt,
         };
     }
 
-    Result res = combinator->fn(ctxt, combinator);
+    size_t index_copy = ctxt->input->index;
+    void *saved_ptr = ctxt->input->src->ptr;
 
-    while (res.success) {
-        PUSH_DYNARRAY(v, res.node);
+    Result res;
+    while (!is_end(ctxt->input->src)) {
+        size_t curr_index = ctxt->input->index;
+        void *curr_ptr = ctxt->input->src->ptr;
+        
         res = combinator->fn(ctxt, combinator);
+
+        if (!res.success) {
+            ctxt->input->index = curr_index;
+            ctxt->input->src->ptr = curr_ptr;
+            break;
+        }
+
+        PUSH_DYNARRAY(v, res.node);
     }
 
     Node *node = malloc(sizeof(Node));
     if (!node) {
         destroy_dynarray(v);
+        ctxt->input->index = index_copy;
+        ctxt->input->src->ptr = saved_ptr;
         return (Result){
             .success = 0,
             .error = J
@@ -280,7 +298,7 @@ skip(Context *ctxt,
     iterator *it = ctxt->input->src;
 
     if (is_end(it)) {
-        printf("Error O");
+        printf("Error O"); // unexpected end of input
         return (Result){
             .success = 0,
             .error = O
@@ -296,6 +314,7 @@ skip(Context *ctxt,
         printf("is end : %d\n", !is_end(it));
         next(it);
         ctxt->input->index++;
+        printf("index: %d\n", ctxt->input->index);
 
         printf("Success");
         return (Result){

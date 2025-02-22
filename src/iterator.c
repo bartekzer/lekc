@@ -12,7 +12,7 @@ init(void* ptr,
     return (iterator){
         ptr,
         elem_size,
-        length == 0 ? NULL : ptr + elem_size * length
+        length == 0 ? NULL : (char *)ptr + elem_size * length
     };
 }
 
@@ -22,7 +22,7 @@ next(iterator* it)
     if (!it || is_end(it)) {
         return it;
     }
-    void* next_ptr = it->ptr + it->elem_size;
+    void* next_ptr = (char *)it->ptr + it->elem_size;
     if (next_ptr <= it->end) {
         it->ptr = next_ptr;
     }
@@ -35,5 +35,5 @@ is_end(iterator* it)
     if (!it || !it->ptr || !it->end) {
         return 1;
     }
-    return it->ptr >= it->end;
+    return (char *)it->ptr >= (char *)it->end;
 }
