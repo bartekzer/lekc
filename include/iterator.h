@@ -17,6 +17,4 @@ iterator init(void*, size_t, size_t);
 iterator* next(iterator*);
 int is_end(iterator*);
 
-#define FOR_EACH(it) for (; !is_end(&it); next(&it))
-
 #endif // iterator_H 

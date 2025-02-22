@@ -1,9 +1,7 @@
 # SPDX-FileCopyrightText: 2025 Łukasz Bartkiewicz <lukasku@proton.me>
 # SPDX-License-Identifier: MPL-2.0
 
+lib
 test
 tests/test
-include/COMPLAIN.asciidoc
-src/morgan.*
 *.o
-lib/

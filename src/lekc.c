@@ -9,10 +9,10 @@
 #include <stdio.h>
 
 Combinator
-new_combinator(const char *name,
-               Result (*fn)(Context *, Combinator *),
-               void *terminal,
-               dynarray *combinators)
+build(const char *name,
+      Result (*fn)(Context *, Combinator *),
+      void *terminal,
+      dynarray *combinators)
 {
     return (Combinator){
         .name = name,
@@ -288,7 +288,7 @@ skip(Context *ctxt,
     iterator *it = ctxt->input->src;
 
     if (is_end(it)) {
-        printf("Error O"); // unexpected end of input
+        printf("Error O");
         return (Result){
             .success = 0,
             .error = O

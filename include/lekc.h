@@ -72,26 +72,16 @@ struct Combinator {
     dynarray *combinators;
 };
 
-Combinator new_combinator(const char *,
-                          Result (*)(Context *, Combinator *),
-                          void *,
-                          dynarray *);
+Combinator build(const char *,
+                 Result (*)(Context *, Combinator *),
+                 void *,
+                 dynarray *);
 Cursor new_cursor(iterator *);
-Context new_ctxt(iterator *,
-                 int (*)(void *, void *));
-
 Result seq(Context *, Combinator *);
 Result alt(Context *, Combinator *);
-Result many(Context *, Combinator *); 
+Result many(Context *, Combinator *);
 Result many1(Context *, Combinator *);
 Result optional(Context *, Combinator *);
 Result skip(Context *, Combinator *);
-
-#define COMPARE(type, name, body) \
-    static int compare_##name(void *_a, void *_b) { \
-        const type *a = (const type*)_a; \
-        const type *b = (const type*)_b; \
-        body \
-    }
 
 #endif // LEKC_H
