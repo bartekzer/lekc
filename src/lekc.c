@@ -31,16 +31,6 @@ new_cursor(iterator *src)
     };
 }
 
-// Context
-// new_ctxt(iterator *input,
-//          int (*eq)(void *, void *))
-// {
-//     return (Context){
-//         .input = new_cursor(input),
-//         .eq = eq
-//     };
-// }
-
 Result
 seq(Context *ctxt,
     Combinator *self)

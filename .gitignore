@@ -5,3 +5,5 @@ test
 tests/test
 include/COMPLAIN.asciidoc
 src/morgan.*
+*.o
+lib/
