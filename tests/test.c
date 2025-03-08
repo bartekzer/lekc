@@ -90,9 +90,19 @@ int main() {
     iterator it = init(array, sizeof(int), 10);
 
     Cursor cursor = new_cursor(&it);
+
+    Node* root = malloc(sizeof(Node));
+    if (!root) return 1;
+    root->name = "root";
+    root->terminal = NULL;
+    root->children = CREATE_DYNARRAY(10, Node*);
+    if (!root->children) return 1;
+
     Context ctxt = {
         .input = &cursor,
-        .eq = compare_int
+        .eq = compare_int,
+        .parent_node = root,
+        .error = 0 // 0 = no error
     };
 
     ///////// 1 and 0
@@ -156,7 +166,7 @@ int main() {
     dynarray *c2_combinators = CREATE_DYNARRAY(1, Combinator*);
     if (!c2_combinators) return 1;
     PUSH_DYNARRAY(c2_combinators, &c3);
-    PUSH_DYNARRAY(c2_combinators, &c4);
+    // PUSH_DYNARRAY(c2_combinators, &c4);
 
     Combinator c2 = build("c2", many, NULL, c2_combinators);
 
@@ -171,12 +181,12 @@ int main() {
 
     //////////////////////////////
 
-    Result r = c1.fn(&ctxt, &c1);
+    c1.fn(&ctxt, &c1);
 
-    if (r.success) {
-        print_node(r.node, 0);
+    if (!ctxt.error) {
+        print_node(ctxt.parent_node, 0);
     } else {
-        printf("Failed with error: %s\n", show_error(r.error));
+        printf("Failed with error: %s\n", show_error(ctxt.error));
     }
 
     return 0;

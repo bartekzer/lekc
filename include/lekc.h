@@ -9,7 +9,7 @@
 #include "iterator.h"
 
 typedef enum {
-    A,
+    A = 1,
     B,
     C,
     D,
@@ -50,38 +50,41 @@ typedef struct {
     dynarray *children;
 } Node;
 
-typedef struct {
-    int success;
-    union {
-        Error error;
-        Node *node;
-    };
-} Result;
+// à supprimer au profit d'un retour de booléen
+// typedef struct {
+//     int success;
+//     union {
+//         Error error;
+//         Node *node;
+//     };
+// } Result;
 
 typedef struct {
     Cursor *input;
     int (*eq)(void *, void *);
+    Node* parent_node;
+    Error error;
 } Context;
 
 typedef struct Combinator Combinator;
 
 struct Combinator {
     const char *name;
-    Result (*fn)(Context *, Combinator *);
+    int (*fn)(Context *, Combinator *); // changer ici aussi par un `bool`
     void *terminal;
     dynarray *combinators;
 };
 
 Combinator build(const char *,
-                 Result (*)(Context *, Combinator *),
+                 int (*)(Context *, Combinator *),
                  void *,
                  dynarray *);
 Cursor new_cursor(iterator *);
-Result seq(Context *, Combinator *);
-Result alt(Context *, Combinator *);
-Result many(Context *, Combinator *);
-Result many1(Context *, Combinator *);
-Result optional(Context *, Combinator *);
-Result skip(Context *, Combinator *);
+int seq(Context *, Combinator *);
+int alt(Context *, Combinator *);
+int many(Context *, Combinator *);
+int many1(Context *, Combinator *);
+int optional(Context *, Combinator *);
+int skip(Context *, Combinator *);
 
 #endif // LEKC_H
