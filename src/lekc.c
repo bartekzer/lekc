@@ -37,9 +37,7 @@ seq(Context *ctxt,
 {
     printf("\n\n%s(seq)\n", self->name);
 
-    if (ctxt->error) return 0;
-
-    if (!ctxt || !self || !self->combinators) {
+    if (!self || !self->combinators) {
         // return (Result){
         //     .success = 0,
         //     .error = A
@@ -49,8 +47,8 @@ seq(Context *ctxt,
     }
 
     // Rajouter la sauvegarde des indices au cas où
-    // size_t index_copy = ctxt->input->index;
-    // void *ptr_copy = ctxt->input->src->ptr;
+    size_t index_copy = ctxt->input->index;
+    void *ptr_copy = ctxt->input->src->ptr;
 
     // dynarray *v = create_dynarray(5, sizeof(Node*));
     // if (!v) {
@@ -82,10 +80,14 @@ seq(Context *ctxt,
         // ctxt->input->src->ptr = ptr_copy;
         Combinator *combinator = GET_DYNARRAY(combinators, i, Combinator*);
         if (!combinator) {
+            ctxt->input->index = index_copy;
+            ctxt->input->src->ptr = ptr_copy;
             ctxt->error = C;
             return 0;
         }
         if (!combinator->fn(ctxt, combinator)) {
+            ctxt->input->index = index_copy;
+            ctxt->input->src->ptr = ptr_copy;
             ctxt->error = D;
             return 0;
         }
@@ -131,9 +133,7 @@ alt(Context *ctxt,
 {
     printf("\n\n%s(alt)\n", self->name);
 
-    if (ctxt->error) return 0;
-
-    if (!ctxt || !self || !self->combinators) {
+    if (!self || !self->combinators) {
         ctxt->error = E; // impossible car ctxt n'est justement pas initialisé
         return 0;
     }
@@ -160,11 +160,10 @@ alt(Context *ctxt,
     dynarray *combinators = self->combinators;
 
     for (size_t i = 0; i < combinators->size; i++) {
-        ctxt->input->index = index_copy;
-        ctxt->input->src->ptr = ptr_copy;
+
 
         Combinator *combinator = GET_DYNARRAY(combinators, i, Combinator*);
-        
+
         if (combinator->fn(ctxt, combinator)) {
             ctxt->parent_node = old_parent;
             return 1;
@@ -198,9 +197,13 @@ alt(Context *ctxt,
             //     .node = node
             // };
         }
+        ctxt->input->index = index_copy;
+        ctxt->input->src->ptr = ptr_copy;
+        new_parent->children->size = 0;
         // nécessaire de créer un nouveau dynarray ?
-        // typiquement, seq peut foirer au dernier combinator
-        ctxt->parent_node->children = CREATE_DYNARRAY(5, sizeof(Node*));
+        // typiquement, seq peut foirer au dernier combinator,-> et donc tout le children array serait niqué
+        // ctxt->parent_node->children = CREATE_DYNARRAY(5, sizeof(Node*));
+
         /* else {
             if (i == combinators->size - 1) {
                 return res;
@@ -218,8 +221,6 @@ many(Context *ctxt,
 {
     printf("\n\n%s(many)\n", self->name);
 
-    if (ctxt->error) return 0;
-
     // inutile je pense car ça ajoute directement dans parent_node->children
     // dynarray *v = create_dynarray(5, sizeof(Node*));
     // if (!v) {
@@ -227,6 +228,7 @@ many(Context *ctxt,
     //     return 0;
     // }
 
+    // Il faut faire en sorte qu'un seul combinator puisse être passé en argument
     dynarray *combinators = self->combinators;
     Combinator *combinator = GET_DYNARRAY(combinators, 0, Combinator*);
     if (!combinator) {
@@ -257,7 +259,7 @@ many(Context *ctxt,
     while (!is_end(ctxt->input->src)) {
         size_t curr_index = ctxt->input->index;
         void *curr_ptr = ctxt->input->src->ptr;
-        
+
         // res = combinator->fn(ctxt, combinator);
 
         if (!combinator->fn(ctxt, combinator)) {
@@ -287,7 +289,7 @@ many(Context *ctxt,
     //     .success = 1,
     //     .node = node
     // };
-    ctxt->error = 0;
+    ctxt->error = 0; // we reset error message
     ctxt->parent_node = old_parent;
     return 1;
 }
@@ -330,7 +332,8 @@ optional(Context *ctxt,
         return 0;
     }
 
-    ctxt->error = 0;
+    // nul besoir de reset l'erreur normalement
+    // ctxt->error = 0;
     ctxt->parent_node = old_parent;
     return 1;
 }
@@ -338,12 +341,10 @@ optional(Context *ctxt,
 int
 skip(Context *ctxt,
      Combinator *self)
-{   
+{
     printf("\n\n%s(skip)\n", self->name);
 
-    if (ctxt->error) return 0;
-
-    if (!ctxt || !self || !self->terminal) {
+    if (!self || !self->terminal) {
         ctxt->error = M;
         return 0;
     }

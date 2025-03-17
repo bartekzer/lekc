@@ -6,6 +6,7 @@ let
 in
   pkgs.mkShell {
     packages = with pkgs; [
+      gcc
       reuse
       gnumake
     ];

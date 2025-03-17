@@ -21,10 +21,10 @@ print_node(Node* node,
         printf("  ");
     }
 
-    printf("%s (type: %s)", 
+    printf("%s (type: %s)",
            node->name ? node->name : "<NO NAME>",
            node->terminal ? "terminal" : "non-terminal");
-    
+
     if (node->terminal) {
         printf(" value: %d", *(int*)node->terminal);
     }
@@ -86,7 +86,7 @@ char *show_error(Error error)
 }
 
 int main() {
-    int array[10] = { 0, 0, 1, 1, 0, 0, 1, 1, 1, 0 };
+    int array[10] = { 0, 0, 1, 1, 0, 0, 1, 1, 0, 1 };
     iterator it = init(array, sizeof(int), 10);
 
     Cursor cursor = new_cursor(&it);
@@ -105,7 +105,7 @@ int main() {
         .error = 0 // 0 = no error
     };
 
-    ///////// 1 and 0
+    ///////// 1 0
 
     int zero_value = 0;
     Combinator zero = build("zero", skip, &zero_value, NULL);
@@ -156,17 +156,15 @@ int main() {
 
     dynarray *c3_combinators = CREATE_DYNARRAY(2, Combinator*);
     if (!c3_combinators) return 1;
-    PUSH_DYNARRAY(c3_combinators, &c4);
     PUSH_DYNARRAY(c3_combinators, &c5);
+    PUSH_DYNARRAY(c3_combinators, &c4);
 
     Combinator c3 = build("c3", alt, NULL, c3_combinators);
-
     //////// (1 1 | 0 0)*
 
     dynarray *c2_combinators = CREATE_DYNARRAY(1, Combinator*);
     if (!c2_combinators) return 1;
     PUSH_DYNARRAY(c2_combinators, &c3);
-    // PUSH_DYNARRAY(c2_combinators, &c4);
 
     Combinator c2 = build("c2", many, NULL, c2_combinators);
 
