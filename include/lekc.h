@@ -8,37 +8,6 @@
 #include "dynarray.h"
 #include "iterator.h"
 
-typedef enum {
-    A = 1,
-    B,
-    C,
-    D,
-    E,
-    F,
-    G,
-    H,
-    I,
-    J,
-    K,
-    L,
-    M,
-    N,
-    O,
-    P,
-    Q,
-    R,
-    S,
-    T,
-    U,
-    V,
-    W,
-    X,
-    Y,
-    Z,
-    AMBIGUOUS,
-    UNEXPECTED
-} Error;
-
 typedef struct {
     iterator *src;
     size_t index;
@@ -50,31 +19,23 @@ typedef struct {
     dynarray *children;
 } Node;
 
-// à supprimer au profit d'un retour de booléen
-// typedef struct {
-//     int success;
-//     union {
-//         Error error;
-//         Node *node;
-//     };
-// } Result;
-
 typedef struct {
     Cursor *input;
     int (*eq)(void *, void *);
     Node* parent_node;
-    Error error;
+    const char* error;
 } Context;
 
 typedef struct Combinator Combinator;
 
 struct Combinator {
     const char *name;
-    int (*fn)(Context *, Combinator *); // changer ici aussi par un `bool`
+    int (*fn)(Context *, Combinator *);
     void *terminal;
     dynarray *combinators;
 };
 
+void debug_node(const Node*, int);
 Combinator build(const char *,
                  int (*)(Context *, Combinator *),
                  void *,

@@ -8,6 +8,26 @@
 #include <string.h>
 #include <stdio.h>
 
+#define UNEXPECTED_MSG "Err: Unexpected token"
+#define NULL_MSG "Err: Null pointer"
+
+const char *
+failed_err_msg(const char *name)
+{
+    int len = strlen(name) + 24;
+    char error_buffer[len];
+    snprintf(error_buffer, len, "Err: Combinator %s failed", name);
+    return strdup(error_buffer);
+}
+
+const char *
+memory_err_msg(size_t size)
+{
+    char error_buffer[256];
+    snprintf(error_buffer, 256, "Err: Allocation %zu bytes", size);
+    return strdup(error_buffer);
+}
+
 Combinator
 build(const char *name,
       int (*fn)(Context *, Combinator *),
@@ -20,6 +40,54 @@ build(const char *name,
         .terminal = terminal,
         .combinators = combinators
     };
+}
+
+static void print_indent(int depth) {
+    for (int i = 0; i < depth; i++) {
+        printf("  ");
+    }
+}
+
+static void print_value(void* value) {
+    if (!value) {
+        printf("null");
+        return;
+    }
+
+    printf("%d", *(int*)value);
+}
+
+void debug_node(const Node* node, int depth) {
+    if (!node) {
+        print_indent(depth);
+        printf("(null node)\n");
+        return;
+    }
+
+    print_indent(depth);
+    printf("Node '%s' {\n", node->name ? node->name : "(unnamed)");
+
+    print_indent(depth + 1);
+    printf("terminal: ");
+    print_value(node->terminal);
+    printf("\n");
+
+    if (node->children && node->children->size > 0) {
+        print_indent(depth + 1);
+        printf("children: [\n");
+
+        for (size_t i = 0; i < node->children->size; i++) {
+            Node* child = NULL;
+            memcpy(&child, (char*)node->children->array + (i * node->children->elem_size), sizeof(Node*));
+            debug_node(child, depth + 2);
+        }
+
+        print_indent(depth + 1);
+        printf("]\n");
+    }
+
+    print_indent(depth);
+    printf("}\n");
 }
 
 Cursor
@@ -35,35 +103,20 @@ int
 seq(Context *ctxt,
     Combinator *self)
 {
-    printf("\n\n%s(seq)\n", self->name);
+    // printf("\n\n%s(seq)\n", self->name);
 
     if (!self || !self->combinators) {
-        // return (Result){
-        //     .success = 0,
-        //     .error = A
-        // };
-        ctxt->error = A;
+        ctxt->error = NULL_MSG;
         return 0;
     }
 
-    // Rajouter la sauvegarde des indices au cas où
     size_t index_copy = ctxt->input->index;
     void *ptr_copy = ctxt->input->src->ptr;
 
-    // dynarray *v = create_dynarray(5, sizeof(Node*));
-    // if (!v) {
-    //     return (Result){
-    //         .success = 0,
-    //         .error = B
-    //     };
-    // }
-
-
-    //////////
     Node *old_parent = ctxt->parent_node;
     Node *new_parent = malloc(sizeof(Node));
     if (!new_parent) {
-        ctxt->error = B;
+        ctxt->error = memory_err_msg(sizeof(Node));
         return 0;
     }
     new_parent->name = self->name;
@@ -71,82 +124,53 @@ seq(Context *ctxt,
     new_parent->children = CREATE_DYNARRAY(5, sizeof(Node*));
     PUSH_DYNARRAY(old_parent->children, new_parent);
     ctxt->parent_node = new_parent;
-    //////////
-
 
     dynarray *combinators = self->combinators;
+
     for (size_t i = 0; i < combinators->size; i++) {
-        // ctxt->input->index = index_copy;
-        // ctxt->input->src->ptr = ptr_copy;
         Combinator *combinator = GET_DYNARRAY(combinators, i, Combinator*);
+
         if (!combinator) {
             ctxt->input->index = index_copy;
             ctxt->input->src->ptr = ptr_copy;
-            ctxt->error = C;
+            ctxt->error = NULL_MSG;
+
+            ctxt->parent_node = old_parent;
             return 0;
         }
+
         if (!combinator->fn(ctxt, combinator)) {
             ctxt->input->index = index_copy;
             ctxt->input->src->ptr = ptr_copy;
-            ctxt->error = D;
+            ctxt->error = failed_err_msg(combinator->name);
+
+            ctxt->parent_node = old_parent;
             return 0;
         }
-
-        // Combinator *combinator = GET_DYNARRAY(combinators, i, Combinator*);
-        // Result res = combinator->fn(ctxt, combinator);
-
-        // if (!res.success) {
-        //     destroy_dynarray(v);
-        //     return res;
-        // }
-
-        // PUSH_DYNARRAY(v, res.node);
     }
 
     ctxt->parent_node = old_parent;
     return 1;
-
-    // Node *node = malloc(sizeof(Node));
-    // if (!node) {
-    //     destroy_dynarray(v);
-    //     return (Result){
-    //         .success = 0,
-    //         .error = C
-    //     };
-    // }
-
-    // *node = (Node){
-    //     .name = self->name,
-    //     .terminal = self->terminal,
-    //     .children = v
-    // };
-
-    // return (Result){
-    //     .success = 1,
-    //     .node = node
-    // };
 }
 
 int
 alt(Context *ctxt,
     Combinator *self)
 {
-    printf("\n\n%s(alt)\n", self->name);
+    // printf("\n\n%s(alt)\n", self->name);
 
     if (!self || !self->combinators) {
-        ctxt->error = E; // impossible car ctxt n'est justement pas initialisé
+        ctxt->error = NULL_MSG;
         return 0;
     }
 
     size_t index_copy = ctxt->input->index;
     void *ptr_copy = ctxt->input->src->ptr;
 
-
-    //////////
     Node *old_parent = ctxt->parent_node;
     Node *new_parent = malloc(sizeof(Node));
     if (!new_parent) {
-        ctxt->error = F;
+        ctxt->error = memory_err_msg(sizeof(Node));
         return 0;
     }
     new_parent->name = self->name;
@@ -154,64 +178,24 @@ alt(Context *ctxt,
     new_parent->children = CREATE_DYNARRAY(5, sizeof(Node*));
     PUSH_DYNARRAY(old_parent->children, new_parent);
     ctxt->parent_node = new_parent;
-    //////////
-
 
     dynarray *combinators = self->combinators;
 
     for (size_t i = 0; i < combinators->size; i++) {
-
-
         Combinator *combinator = GET_DYNARRAY(combinators, i, Combinator*);
 
         if (combinator->fn(ctxt, combinator)) {
             ctxt->parent_node = old_parent;
             return 1;
-            // Node *node = malloc(sizeof(Node));
-
-            // if (!node) {
-            //     return (Result){
-            //         .success = 0,
-            //         .error = E
-            //     };
-            // }
-
-            // *node = (Node){
-            //     .name = self->name,
-            //     .terminal = self->terminal,
-            //     .children = CREATE_DYNARRAY(1, sizeof(Node*))
-            // };
-
-            // if (!node->children) {
-            //     free(node);
-            //     return (Result){
-            //         .success = 0,
-            //         .error = F
-            //     };
-            // }
-
-            // PUSH_DYNARRAY(node->children, res.node);
-
-            // return (Result) {
-            //     .success = 1,
-            //     .node = node
-            // };
         }
+
         ctxt->input->index = index_copy;
         ctxt->input->src->ptr = ptr_copy;
-        new_parent->children->size = 0;
-        // nécessaire de créer un nouveau dynarray ?
-        // typiquement, seq peut foirer au dernier combinator,-> et donc tout le children array serait niqué
-        // ctxt->parent_node->children = CREATE_DYNARRAY(5, sizeof(Node*));
-
-        /* else {
-            if (i == combinators->size - 1) {
-                return res;
-            }
-        }*/
+        ctxt->parent_node->children = CREATE_DYNARRAY(5, sizeof(Node*));
     }
 
-    ctxt->error = G;
+    ctxt->error = failed_err_msg(self->name);
+    ctxt->parent_node = old_parent;
     return 0;
 }
 
@@ -219,32 +203,20 @@ int
 many(Context *ctxt,
      Combinator *self)
 {
-    printf("\n\n%s(many)\n", self->name);
+    // printf("\n\n%s(many)\n", self->name);
 
-    // inutile je pense car ça ajoute directement dans parent_node->children
-    // dynarray *v = create_dynarray(5, sizeof(Node*));
-    // if (!v) {
-    //     ctxt->error = H;
-    //     return 0;
-    // }
-
-    // Il faut faire en sorte qu'un seul combinator puisse être passé en argument
+    // TODO: Force user to provide only one combinator
     dynarray *combinators = self->combinators;
     Combinator *combinator = GET_DYNARRAY(combinators, 0, Combinator*);
     if (!combinator) {
-        ctxt->error = H;
+        ctxt->error = NULL_MSG;
         return 0;
     }
 
-    // size_t index_copy = ctxt->input->index;
-    // void *saved_ptr = ctxt->input->src->ptr;
-
-
-    //////////
     Node *old_parent = ctxt->parent_node;
     Node *new_parent = malloc(sizeof(Node));
     if (!new_parent) {
-        ctxt->error = I;
+        ctxt->error = memory_err_msg(sizeof(Node));
         return 0;
     }
     new_parent->name = self->name;
@@ -252,15 +224,10 @@ many(Context *ctxt,
     new_parent->children = CREATE_DYNARRAY(5, sizeof(Node*));
     PUSH_DYNARRAY(old_parent->children, new_parent);
     ctxt->parent_node = new_parent;
-    //////////
 
-
-    // Result res;
     while (!is_end(ctxt->input->src)) {
         size_t curr_index = ctxt->input->index;
         void *curr_ptr = ctxt->input->src->ptr;
-
-        // res = combinator->fn(ctxt, combinator);
 
         if (!combinator->fn(ctxt, combinator)) {
             ctxt->input->index = curr_index;
@@ -269,27 +236,7 @@ many(Context *ctxt,
         }
     }
 
-    // Node *node = malloc(sizeof(Node));
-    // if (!node) {
-    //     destroy_dynarray(v);
-    //     ctxt->input->index = index_copy;
-    //     ctxt->input->src->ptr = saved_ptr;
-    //     return (Result){
-    //         .success = 0,
-    //         .error = J
-    //     };
-    // }
-    // *node = (Node){
-    //     .name = self->name,
-    //     .terminal = self->terminal,
-    //     .children = v
-    // };
-
-    // return (Result){
-    //     .success = 1,
-    //     .node = node
-    // };
-    ctxt->error = 0; // we reset error message
+    ctxt->error = NULL;
     ctxt->parent_node = old_parent;
     return 1;
 }
@@ -298,24 +245,21 @@ int
 optional(Context *ctxt,
          Combinator *self)
 {
-    printf("\n\n%s(optional)\n", self->name);
-
-    if (ctxt->error) return 0;
+    // printf("\n\n%s(optional)\n", self->name);
 
     dynarray *combinators = self->combinators;
 
+    // TODO: Force user to provide only one combinator
     Combinator *combinator = GET_DYNARRAY(combinators, 0, Combinator*);
     if (!combinator) {
-        ctxt->error = J;
+        ctxt->error = NULL_MSG;
         return 0;
     }
 
-
-    //////////
     Node *old_parent = ctxt->parent_node;
     Node *new_parent = malloc(sizeof(Node));
     if (!new_parent) {
-        ctxt->error = K;
+        ctxt->error = memory_err_msg(sizeof(Node));
         return 0;
     }
     new_parent->name = self->name;
@@ -323,59 +267,38 @@ optional(Context *ctxt,
     new_parent->children = CREATE_DYNARRAY(1, sizeof(Node*));
     PUSH_DYNARRAY(old_parent->children, new_parent);
     ctxt->parent_node = new_parent;
-    //////////
 
-
-    // Result res = combinator->fn(ctxt, combinator);
-    if (!combinator->fn(ctxt, combinator)) {
-        ctxt->error = L;
-        return 0;
-    }
-
-    // nul besoir de reset l'erreur normalement
-    // ctxt->error = 0;
+    int res = combinator->fn(ctxt, combinator);
     ctxt->parent_node = old_parent;
-    return 1;
+    return res;
 }
 
 int
 skip(Context *ctxt,
      Combinator *self)
 {
-    printf("\n\n%s(skip)\n", self->name);
+    // printf("\n\n%s(skip)\n", self->name);
 
     if (!self || !self->terminal) {
-        ctxt->error = M;
+        ctxt->error = NULL_MSG;
         return 0;
     }
 
     iterator *it = ctxt->input->src;
 
     if (is_end(it)) {
-        printf("Error N");
-        ctxt->error = N;
+        ctxt->error = "Err: Unexpected end of input";
         return 0;
     }
 
     int *curr = it->ptr;
 
-    printf("expected: %d\n", *(int *)self->terminal);
-    printf("curr: %d\n", *(int *)curr);
-    printf("eq: %d\n", ctxt->eq(self->terminal, curr));
     if (ctxt->eq(self->terminal, curr)) {
-        printf("is end : %d\n", !is_end(it));
         next(it);
         ctxt->input->index++;
-        printf("index: %ld\n", ctxt->input->index);
-
-        printf("Success");
-        // return (Result){
-        //     .success = 1,
-        //     .node = NULL,
-        // };
         return 1;
     }
 
-    ctxt->error = O;
+    ctxt->error = UNEXPECTED_MSG;
     return 0;
 }

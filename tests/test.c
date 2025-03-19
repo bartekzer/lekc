@@ -7,86 +7,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void
-print_node(Node* node,
-           int depth)
-{
-    if (!node) {
-        for (int i = 0; i < depth; i++) printf("  ");
-        printf("<NULL NODE>\n");
-        return;
-    }
-
-    for (int i = 0; i < depth; i++) {
-        printf("  ");
-    }
-
-    printf("%s (type: %s)",
-           node->name ? node->name : "<NO NAME>",
-           node->terminal ? "terminal" : "non-terminal");
-
-    if (node->terminal) {
-        printf(" value: %d", *(int*)node->terminal);
-    }
-    printf("\n");
-
-    if (node->children) {
-        for (int i = 0; i < depth + 1; i++) printf("  ");
-        printf("Children count: %zu\n", node->children->size);
-
-        for (size_t i = 0; i < node->children->size; i++) {
-            Node* child = GET_DYNARRAY(node->children, i, Node*);
-            if (!child) {
-                for (int j = 0; j < depth + 1; j++) printf("  ");
-                printf("Child %zu: <NULL>\n", i);
-                continue;
-            }
-            print_node(child, depth + 1);
-        }
-    }
-}
-
 int compare_int(void *a, void *b) {
     return *(int *)a == *(int *)b;
 }
 
-char *show_error(Error error)
-{
-    switch (error) {
-        case A: return "A";
-        case B: return "B";
-        case C: return "C";
-        case D: return "D";
-        case E: return "E";
-        case F: return "F";
-        case G: return "G";
-        case H: return "H";
-        case I: return "I";
-        case J: return "J";
-        case K: return "K";
-        case L: return "L";
-        case M: return "M";
-        case N: return "N";
-        case O: return "O";
-        case P: return "P";
-        case Q: return "Q";
-        case R: return "R";
-        case S: return "S";
-        case T: return "T";
-        case U: return "U";
-        case V: return "V";
-        case W: return "W";
-        case X: return "X";
-        case Y: return "Y";
-        case Z: return "Z";
-        case AMBIGUOUS: return "AMBIGUOUS";
-        case UNEXPECTED: return "UNEXPECTED";
-        default: "UNKNOWN";
-    }
-}
-
 int main() {
-    int array[10] = { 0, 0, 1, 1, 0, 0, 1, 1, 0, 1 };
+    int array[10] = { 0, 0, 0, 1, 0, 0, 1, 1, 0, 1 };
     iterator it = init(array, sizeof(int), 10);
 
     Cursor cursor = new_cursor(&it);
@@ -102,7 +28,7 @@ int main() {
         .input = &cursor,
         .eq = compare_int,
         .parent_node = root,
-        .error = 0 // 0 = no error
+        .error = NULL
     };
 
     ///////// 1 0
@@ -160,6 +86,7 @@ int main() {
     PUSH_DYNARRAY(c3_combinators, &c4);
 
     Combinator c3 = build("c3", alt, NULL, c3_combinators);
+
     //////// (1 1 | 0 0)*
 
     dynarray *c2_combinators = CREATE_DYNARRAY(1, Combinator*);
@@ -181,11 +108,9 @@ int main() {
 
     c1.fn(&ctxt, &c1);
 
-    if (!ctxt.error) {
-        print_node(ctxt.parent_node, 0);
-    } else {
-        printf("Failed with error: %s\n", show_error(ctxt.error));
-    }
+
+    printf("%s\n", ctxt.error);
+    debug_node(ctxt.parent_node, 0);
 
     return 0;
 }
