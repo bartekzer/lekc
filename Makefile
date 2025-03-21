@@ -12,6 +12,9 @@ SRC = $(wildcard src/*.c)
 OBJ = $(SRC:.c=.o)
 LIB = lib/liblekc.a
 
+TEST_SRC = $(wildcard tests/*.c)
+TEST_BIN = $(TEST_SRC:%.c=%)
+
 all: $(LIB)
 
 $(LIB): $(OBJ)
@@ -20,11 +23,16 @@ $(LIB): $(OBJ)
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
+tests/%: tests/%.c $(LIB)
+	$(CC) $< -Iinclude -Llib -llekc -o $@
+
+test: $(TEST_BIN)
+	@for test in $(TEST_BIN); do \
+		echo "Running $$test"; \
+		./$$test; \
+	done
+
 clean:
 	rm -f $(OBJ) $(LIB) tests/test
-
-test: all
-	$(CC) tests/test.c -Iinclude -Llib -llekc -o tests/test
-	./tests/test
 
 .PHONY: all clean test

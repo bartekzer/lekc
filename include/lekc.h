@@ -22,6 +22,7 @@ typedef struct {
 typedef struct {
     Cursor *input;
     int (*eq)(void *, void *);
+    int success;
     Node* parent_node;
     const char* error;
 } Context;
